@@ -5,7 +5,7 @@ import type { Metadata } from 'next'
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '/api-tester'
 
 export const metadata: Metadata = {
-    title: 'Api Scout',
+    title: 'restiQo',
     description: 'Universal API Testing & Traffic Capture Tool',
     icons: {
         icon: `${basePath}/logo.svg`,

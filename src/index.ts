@@ -42,9 +42,9 @@ export interface ApiTesterOptions {
 }
 
 /**
- * Main entry point for api-scout library
+ * Main entry point for restiqo library
  */
-export function apiScout(options: ApiTesterOptions): Router {
+export function restiqo(options: ApiTesterOptions): Router {
     const router = Router();
     const userId = options.userId ?? 'system';
     const projectName = getProjectName();
@@ -122,7 +122,7 @@ async function initializeCapture(app: Express, storage: IStorageProvider, captur
     }
     await captureService.capture(app, userId, projectName).catch(() => { /* Silently fail */ });
     const port = process.env.PORT ?? '3000';
-    process.stdout.write(`Api Scout URL :- \x1b[32mhttp://localhost:${port}${mountPath}\x1b[0m\n`);
+    process.stdout.write(`restiQo URL :- \x1b[32mhttp://localhost:${port}${mountPath}\x1b[0m\n`);
 }
 
 function setupApiRoutes(router: Router, storage: IStorageProvider, userId: string, options: ApiTesterOptions): void {

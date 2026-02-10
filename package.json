@@ -1,6 +1,6 @@
 {
-    "name": "api-scout",
-    "version": "1.0.1",
+    "name": "restiqo",
+    "version": "1.0.0",
     "description": "Auto-generating Postman-like UI for Express applications",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
@@ -44,12 +44,12 @@
     "license": "MIT",
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/01Pratham/api-scout.git"
+        "url": "git+https://github.com/01Pratham/restiqo.git"
     },
     "bugs": {
-        "url": "https://github.com/01Pratham/api-scout/issues"
+        "url": "https://github.com/01Pratham/restiqo/issues"
     },
-    "homepage": "https://github.com/01Pratham/api-scout#readme",
+    "homepage": "https://github.com/01Pratham/restiqo#readme",
     "funding": {
         "type": "github",
         "url": "https://github.com/sponsors/01Pratham"

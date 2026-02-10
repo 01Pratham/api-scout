@@ -497,13 +497,13 @@ export const Sidebar = ({
                     >
                         <Image
                             src={`${process.env.NEXT_PUBLIC_BASE_PATH || '/api-tester'}/logo.svg`}
-                            alt="Api Scout Logo"
+                            alt="restiQo Logo"
                             width={40}
                             height={40}
                         />
                     </Box>
                     <Heading size="md" bgGradient="linear(to-r, purple.500, blue.500)" bgClip="text" letterSpacing="tight">
-                        Api Scout
+                        restiQo
                     </Heading>
                 </HStack>
                 <HStack spacing={1}>
