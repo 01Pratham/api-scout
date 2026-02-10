@@ -18,8 +18,11 @@ jobs:
           node-version: '20'
           registry-url: 'https://registry.npmjs.org'
 
-      - name: Install dependencies
+      - name: Install library dependencies
         run: npm ci
+
+      - name: Install UI dependencies
+        run: npm ci --prefix ui-src
 
       - name: Build and Publish
         run: npm publish
