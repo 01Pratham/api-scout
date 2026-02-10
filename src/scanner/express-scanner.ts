@@ -1,10 +1,10 @@
-import type { ExpressLayer, ZodSchemaLike } from '../storage/interfaces';
+import type { ExpressLayer, ZodSchemaLike, SchemaExtractor } from '../storage/interfaces';
 import type { Express } from 'express';
 
 /**
  * Represents a schema object with string keys and SchemaValue values
  */
-interface SchemaObject {
+export interface SchemaObject {
     [key: string]: string | number | boolean | string[] | SchemaObject | null;
 }
 
@@ -29,12 +29,26 @@ interface ExpressHandle {
     keys?: unknown;
     _ids?: { _byKey?: Map<string, unknown> };
     stack?: ExpressLayer[];
+    // Yup specific
+    fields?: Record<string, unknown>;
+    innerType?: unknown;
+    spec?: unknown;
 }
 
 /**
  * Service to scan Express routes and extract metadata
  */
 export class ExpressScanner {
+    private customExtractors: SchemaExtractor[] = [];
+
+    /**
+     * Adds a custom schema extractor
+     * @param extractor Function to extract schema from a middleware handle
+     */
+    public use(extractor: SchemaExtractor): void {
+        this.customExtractors.push(extractor);
+    }
+
     /**
      * Scans the Express application for all registered routes
      * @param app The Express application instance
@@ -115,11 +129,22 @@ export class ExpressScanner {
     }
 
     private findSchemaInHandle(handle: ExpressHandle): SchemaObject | null {
-        const schemas: (ZodSchemaLike | undefined)[] = [
+        // 1. Try custom extractors first
+        for (const extractor of this.customExtractors) {
+            try {
+                const custom = extractor(handle);
+                if (custom !== null && typeof custom === 'object') {
+                    return custom as unknown as SchemaObject;
+                }
+            } catch { /* Ignore */ }
+        }
+
+        // 2. Try known patterns
+        const schemas: (ZodSchemaLike | undefined | any)[] = [
             handle.zodSchema,
             handle.schema?.zodSchema,
             handle.params?.zodSchema,
-            handle.schema as ZodSchemaLike | undefined,
+            handle.schema,
             handle.validator?.schema,
             handle.bodySchema
         ];
@@ -135,8 +160,13 @@ export class ExpressScanner {
             }
         }
 
+        // 3. Fallback for Joi/Yup directly on handle
         if (this.isJoiLike(handle)) {
             return this.parseJoiSchema(handle);
+        }
+
+        if (this.isYupLike(handle)) {
+            return this.parseYupSchema(handle);
         }
 
         return null;
@@ -154,7 +184,43 @@ export class ExpressScanner {
             return this.parseJoiSchema(s);
         }
 
+        if (this.isYupLike(s)) {
+            return this.parseYupSchema(s);
+        }
+
+        if (this.isJsonSchemaLike(s)) {
+            return this.parseJsonSchema(s);
+        }
+
         return null;
+    }
+
+    private isJsonSchemaLike(s: unknown): boolean {
+        return s !== null && typeof s === 'object' && ('properties' in s || (s as any).type === 'object');
+    }
+
+    private parseJsonSchema(s: any): SchemaObject | null {
+        if (s.properties !== undefined) {
+            const obj: SchemaObject = {};
+            for (const key in s.properties) {
+                obj[key] = this.getJsonSchemaDefaultValue(s.properties[key]);
+            }
+            return obj;
+        }
+        return null;
+    }
+
+    private getJsonSchemaDefaultValue(field: any): string | number | boolean | string[] | SchemaObject | null {
+        const type = field.type;
+        switch (type) {
+            case 'string': return "string";
+            case 'number':
+            case 'integer': return 0;
+            case 'boolean': return true;
+            case 'array': return [];
+            case 'object': return this.parseJsonSchema(field);
+            default: return "any";
+        }
     }
 
     private isZodLike(obj: unknown): obj is ZodSchemaLike {
@@ -163,7 +229,38 @@ export class ExpressScanner {
     }
 
     private isJoiLike(s: unknown): boolean {
-        return s !== null && typeof s === 'object' && ('isJoi' in s || ('type' in s && s.type === 'object'));
+        return s !== null && typeof s === 'object' && ('isJoi' in s || (typeof s === 'object' && 'type' in s && (s as any).type === 'object'));
+    }
+
+    private isYupLike(s: unknown): boolean {
+        return s !== null && typeof s === 'object' && ('fields' in s || 'spec' in s || (s as any)._type !== undefined);
+    }
+
+    private parseYupSchema(s: any): SchemaObject | null {
+        if (s.fields !== undefined) {
+            const obj: SchemaObject = {};
+            for (const key in s.fields) {
+                obj[key] = this.getYupDefaultValue(s.fields[key]);
+            }
+            return obj;
+        }
+        return null;
+    }
+
+    private getYupDefaultValue(field: any): string | number | boolean | string[] | SchemaObject | null {
+        try {
+            const type = field.type || (field.spec && field.spec.type);
+            switch (type) {
+                case 'string': return "string";
+                case 'number': return 0;
+                case 'boolean': return true;
+                case 'array': return [];
+                case 'object': return this.parseYupSchema(field);
+                default: return "any";
+            }
+        } catch {
+            return "any";
+        }
     }
 
     private parseJoiSchema(s: unknown): SchemaObject | null {

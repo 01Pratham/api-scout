@@ -19,8 +19,10 @@ import type {
     CreateEnvironmentInput,
     UpdateEnvironmentInput,
     PostmanCollection,
-    Request as StoreRequest
+    Request as StoreRequest,
+    SchemaExtractor
 } from './storage/interfaces';
+import { expressScanner } from './scanner/express-scanner';
 import type { IStorageProvider } from './storage/types';
 import type { Express, Request, Response, NextFunction } from 'express';
 
@@ -35,6 +37,7 @@ export interface ApiTesterOptions {
     storagePath?: string; // Path for JSON storage
     customizationPath?: string; // Path for user customizations
     ignoreSegments?: string[]; // Path segments to ignore for folder logic
+    schemaExtractors?: SchemaExtractor[]; // Custom schema extractors
 }
 
 /**
@@ -49,6 +52,10 @@ export function vibeTest(options: ApiTesterOptions): Router {
 
     if (storage.init !== undefined) {
         void storage.init().catch(() => { /* Silently fail */ });
+    }
+
+    if (options.schemaExtractors !== undefined) {
+        options.schemaExtractors.forEach(extractor => expressScanner.use(extractor));
     }
 
     const captureService = new CaptureService(storage);

@@ -8,12 +8,14 @@ A lightweight, auto-generating Postman-like UI for Express.js applications. Capt
 ## Features
 
 - **🚀 Auto-Capture**: Automatically scans Express routes and captures metadata.
+- **📄 Schema Detection**: Automatically extracts request body schemas from **Zod, Joi, Yup, and TypeBox**.
 - **🚥 Traffic Interceptor**: Automatically logs all incoming request/response traffic to history.
 - **📁 Collection Management**: Organize requests into logical groups.
 - **🌍 Environment Variables**: Use variables like `{{BASE_URL}}` across your requests.
 - **🧠 Intelligent Storage**: Use In-Memory storage for zero setup, or filesystem JSON storage for persistent data.
 - **💎 Premium UI**: A full-featured, Postman-inspired dashboard built with React.
 - **📦 Zero Dependencies**: Built with native `fetch` and minimal external requirements.
+- **🔌 Extensible**: Add custom schema extractors for any validation library.
 
 ## Installation
 
@@ -66,6 +68,29 @@ app.use(vibeTest({
         if (req.user?.isAdmin) return next();
         res.status(403).send('Forbidden');
     }
+}));
+```
+
+### Validation Support
+
+vibe-test automatically detects and parses request bodies from popular validation libraries:
+- **Zod**: Robust support for `z.object`, `z.array`, etc.
+- **Joi**: Detects Joi objects and extracts field keys.
+- **Yup**: Full support for Yup's object schema tree.
+- **TypeBox**: Compatible with JSON Schema based types.
+
+If you use a custom validation wrapper, you can provide a `schemaExtractor`:
+
+```typescript
+app.use(vibeTest({
+    app,
+    schemaExtractors: [
+        (handle: any) => {
+            // Logic to extract schema from your middleware handle
+            if (handle.mySchema) return handle.mySchema.fields;
+            return null;
+        }
+    ]
 }));
 ```
 

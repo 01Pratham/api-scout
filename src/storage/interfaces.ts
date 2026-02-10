@@ -131,6 +131,11 @@ export interface AddToHistoryInput {
 }
 
 /**
+ * Custom schema extractor function
+ */
+export type SchemaExtractor = (handle: unknown) => Record<string, unknown> | null;
+
+/**
  * Express layer type for route scanning
  */
 export interface ExpressLayer {
@@ -145,7 +150,7 @@ export interface ExpressLayer {
         zodSchema?: ZodSchemaLike;
         schema?: {
             zodSchema?: ZodSchemaLike;
-        };
+        } | ZodSchemaLike;
         params?: {
             zodSchema?: ZodSchemaLike;
         };
@@ -153,6 +158,7 @@ export interface ExpressLayer {
             schema?: ZodSchemaLike;
         };
         bodySchema?: ZodSchemaLike;
+        [key: string]: unknown;
     };
     regexp?: RegExp;
 }
