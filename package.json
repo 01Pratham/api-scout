@@ -1,6 +1,6 @@
 {
     "name": "api-scout",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "Auto-generating Postman-like UI for Express applications",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
