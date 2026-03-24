@@ -105,6 +105,8 @@ const DashboardPage = (): JSX.Element => {
         setMethod,
         url,
         setUrl,
+        queryParams,
+        setQueryParams,
         headers,
         body,
         setBody,
@@ -299,6 +301,8 @@ const DashboardPage = (): JSX.Element => {
                                     updateHeader={updateHeaderField}
                                     removeHeader={removeHeaderRow}
                                     addHeaderRow={addHeaderRow}
+                                    queryParams={queryParams}
+                                    setQueryParams={setQueryParams}
                                     bodyType={bodyType}
                                     setBodyType={setBodyType}
                                     body={body}
@@ -402,6 +406,7 @@ const DashboardPage = (): JSX.Element => {
                 inputBg={inputBg}
                 borderColor={borderColor}
                 mutedText={mutedText}
+                variables={currentVariables}
             />
         </Flex>
     )

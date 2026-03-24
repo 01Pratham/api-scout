@@ -81,6 +81,7 @@ export interface UpdateCollectionInput {
  * Input data for creating a request
  */
 export interface CreateRequestInput {
+    id?: string;
     collectionId: string;
     name: string;
     method: string;

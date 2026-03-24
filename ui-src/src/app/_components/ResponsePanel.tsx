@@ -54,7 +54,7 @@ export const ResponsePanel = ({
 
     if (executing) {
         return (
-            <Flex justify="center" align="center" h="md">
+            <Flex justify="center" align="center" h="full" w="full">
                 <Spinner size="xl" color="purple.500" thickness="4px" />
             </Flex>
         )
@@ -62,7 +62,7 @@ export const ResponsePanel = ({
 
     if (!response) {
         return (
-            <Flex direction="column" align="center" justify="center" h="md" color={mutedText} opacity={0.6}>
+            <Flex direction="column" align="center" justify="center" h="full" w="full" color={mutedText} opacity={0.6}>
                 <FiServer size={48} style={{ marginBottom: '16px' }} />
                 <Heading size="md" mb={2} color={headingColor}>
                     Ready to Test
@@ -75,8 +75,9 @@ export const ResponsePanel = ({
     }
 
     return (
-        <VStack align="stretch" spacing={4} p={4} h="md" overflow="auto">
-            <HStack justify="space-between">
+        <Flex direction="column" h="full" w="full" overflow="hidden" p={4} gap={4}>
+            {/* Metadata Bar (Status + Time) */}
+            <HStack justify="space-between" flexShrink={0}>
                 <HStack spacing={3}>
                     <Badge
                         colorScheme={
@@ -114,24 +115,36 @@ export const ResponsePanel = ({
                 </Tooltip>
             </HStack>
 
+            {/* Error Message */}
             {response.error && (
-                <Box bg="red.900" p={4} borderRadius="md" borderLeft="4px solid" borderColor="red.400">
+                <Box bg="red.900" p={4} borderRadius="md" borderLeft="4px solid" borderColor="red.400" flexShrink={0}>
                     <Text color="red.200" fontSize="sm">{response.error}</Text>
                 </Box>
             )}
 
+            {/* Content Tabs */}
             {response.success && (
-                <Tabs size="sm" variant="enclosed" colorScheme="purple">
-                    <TabList>
-                        <Tab>Body</Tab>
-                        {isHtmlResponse() && <Tab>Preview</Tab>}
-                        {isJsonResponse() && <Tab>Cookies</Tab>}
-                        <Tab>Headers</Tab>
+                <Tabs size="sm" variant="enclosed" colorScheme="purple" display="flex" flexDirection="column" flex="1" overflow="hidden">
+                    <TabList flexShrink={0}>
+                        <Tab fontWeight="semibold">Body</Tab>
+                        {isHtmlResponse() && <Tab fontWeight="semibold">Preview</Tab>}
+                        {isJsonResponse() && <Tab fontWeight="semibold">Cookies</Tab>}
+                        <Tab fontWeight="semibold">Headers</Tab>
                     </TabList>
-                    <TabPanels>
+                    
+                    <TabPanels flex="1" overflow="hidden">
                         {/* JSON/Text Body */}
-                        <TabPanel px={0} pt={4}>
-                            <Box bg={cardBg} p={4} borderRadius="md" overflow="auto" maxH="500px" position="relative" border="1px solid" borderColor="gray.100">
+                        <TabPanel px={0} pt={4} h="full">
+                            <Box 
+                                bg={cardBg} 
+                                p={4} 
+                                borderRadius="md" 
+                                overflowY="auto" 
+                                h="full" 
+                                position="relative" 
+                                border="1px solid" 
+                                borderColor="gray.100"
+                            >
                                 <IconButton
                                     aria-label="Copy response"
                                     icon={<FiCopy />}
@@ -140,6 +153,7 @@ export const ResponsePanel = ({
                                     top={2}
                                     right={2}
                                     variant="ghost"
+                                    zIndex={10}
                                     onClick={(): void => {
                                         const text = formatResponseBody(response.body)
                                         void navigator.clipboard.writeText(text)
@@ -152,12 +166,12 @@ export const ResponsePanel = ({
 
                         {/* HTML Preview */}
                         {isHtmlResponse() && (
-                            <TabPanel px={0} pt={4}>
+                            <TabPanel px={0} pt={4} h="full">
                                 <Box
                                     bg="white"
                                     borderRadius="md"
                                     overflow="hidden"
-                                    h="500px"
+                                    h="full"
                                     border="1px solid"
                                     borderColor="gray.100"
                                 >
@@ -172,18 +186,18 @@ export const ResponsePanel = ({
                         )}
 
                         {/* Cookies */}
-                        <TabPanel px={0} pt={4}>
+                        <TabPanel px={0} pt={4} h="full" overflowY="auto">
                             {response.cookies && response.cookies.length > 0 ? (
                                 <CookieTable cookies={response.cookies} />
                             ) : (
-                                <Flex direction="column" align="center" justify="center" h="200px" color={mutedText}>
+                                <Flex direction="column" align="center" justify="center" h="full" color={mutedText}>
                                     <Text fontSize="sm">No cookies received in this response</Text>
                                 </Flex>
                             )}
                         </TabPanel>
 
                         {/* Response Headers */}
-                        <TabPanel px={0} pt={4}>
+                        <TabPanel px={0} pt={4} h="full" overflowY="auto">
                             <VStack align="stretch" spacing={1}>
                                 {response.headers &&
                                     Object.entries(response.headers).map(([key, value]) => (
@@ -199,6 +213,6 @@ export const ResponsePanel = ({
                     </TabPanels>
                 </Tabs>
             )}
-        </VStack>
+        </Flex>
     )
 }

@@ -132,28 +132,39 @@ interface DashboardModalsProps {
     borderColor: string
     mutedText: string
     methodColors: Record<string, string>
+    variables: Record<string, string>
+}
+
+/**
+ * Helper to replace variables in a string
+ */
+const resolveVars = (text: string, variables: Record<string, string>): string => {
+    if (!text) return text
+    return text.replace(/\{\{([^}]+)\}\}/g, (match, varName) => {
+        return variables[varName] !== undefined ? String(variables[varName]) : match
+    })
 }
 
 /**
  * Convert RequestTab to RequestConfig for snippet generator
  */
-const tabToConfig = (tab: RequestTab): RequestConfig => {
+const tabToConfig = (tab: RequestTab, variables: Record<string, string>): RequestConfig => {
     const headers: Record<string, string> = {}
     tab.headers.forEach(h => {
         if (h.key) {
-            headers[h.key] = h.value
+            headers[resolveVars(h.key, variables)] = resolveVars(h.value, variables)
         }
     })
 
     return {
         method: tab.method,
-        url: tab.url,
+        url: resolveVars(tab.url, variables),
         headers,
-        body: tab.body,
+        body: resolveVars(tab.body, variables),
         bodyType: tab.bodyType as 'json' | 'form-data',
         formData: tab.formData.map(f => ({
             key: fieldKey(f.key),
-            value: f.value,
+            value: resolveVars(f.value, variables),
             type: f.type as 'text' | 'file'
         }))
     }
@@ -470,7 +481,7 @@ const ConflictModal = ({ conflictModal, handleConflictReload, handleConflictOver
     </Modal>
 )
 
-const SnippetModal = ({ snippetModal, activeTab, toast, cardBg, inputBg, borderColor }: Pick<DashboardModalsProps, 'snippetModal' | 'activeTab' | 'toast' | 'cardBg' | 'inputBg' | 'borderColor'>): JSX.Element => {
+const SnippetModal = ({ snippetModal, activeTab, toast, cardBg, inputBg, borderColor, variables }: Pick<DashboardModalsProps, 'snippetModal' | 'activeTab' | 'toast' | 'cardBg' | 'inputBg' | 'borderColor' | 'variables'>): JSX.Element => {
     const [selectedLang, setSelectedLang] = useState<SnippetLanguage>('javascript-fetch')
 
     return (
@@ -499,10 +510,11 @@ const SnippetModal = ({ snippetModal, activeTab, toast, cardBg, inputBg, borderC
                         </HStack>
                         <Box border="1px solid" borderColor={borderColor} borderRadius="md" overflow="hidden">
                             <CodeEditor
-                                value={activeTab ? generateSnippet(selectedLang, tabToConfig(activeTab)) : ''}
+                                value={activeTab ? generateSnippet(selectedLang, tabToConfig(activeTab, variables)) : ''}
                                 language={selectedLang === 'curl' ? 'shell' : 'javascript'}
                                 height="400px"
                                 readOnly
+                                variables={variables}
                             />
                         </Box>
                         <Button
@@ -510,7 +522,7 @@ const SnippetModal = ({ snippetModal, activeTab, toast, cardBg, inputBg, borderC
                             size="sm"
                             onClick={(): void => {
                                 if (activeTab) {
-                                    const snippet = generateSnippet(selectedLang, tabToConfig(activeTab))
+                                    const snippet = generateSnippet(selectedLang, tabToConfig(activeTab, variables))
                                     void navigator.clipboard.writeText(snippet)
                                     toast({ title: 'Snippet copied!', status: 'success', duration: 1500 })
                                 }
@@ -555,7 +567,7 @@ export const DashboardModals = (props: DashboardModalsProps): JSX.Element => {
         settingsModal, settings, setSettings, conflictModal, handleConflictReload, handleConflictOverwrite, handleConflictSaveAsNew,
         snippetModal, activeTab, toast, importModal, handleFileImport, fileInputRef, importing,
         openApiViewerModal, openApiSpec, viewerCollectionId, setViewerCollectionId, loadCollectionDocs,
-        createNewTab, setTabs, setActiveTabId, cardBg, inputBg, borderColor, mutedText, methodColors,
+        createNewTab, setTabs, setActiveTabId, cardBg, inputBg, borderColor, mutedText, methodColors, variables,
     } = props
 
     return (
@@ -566,7 +578,7 @@ export const DashboardModals = (props: DashboardModalsProps): JSX.Element => {
             <EnvModal {...{ envModal, editingEnvId, newEnvName, setNewEnvName, newEnvVariables, setNewEnvVariables, saveEnvironment, cardBg, inputBg, borderColor }} />
             <SettingsModal {...{ settingsModal, settings, setSettings, cardBg, inputBg, borderColor, mutedText }} />
             <ConflictModal {...{ conflictModal, handleConflictReload, handleConflictOverwrite, handleConflictSaveAsNew, cardBg, borderColor }} />
-            <SnippetModal {...{ snippetModal, activeTab, toast, cardBg, inputBg, borderColor }} />
+            <SnippetModal {...{ snippetModal, activeTab, toast, cardBg, inputBg, borderColor, variables }} />
             <ImportModal {...{ importModal, fileInputRef, handleFileImport, importing, cardBg, borderColor, mutedText }} />
 
             <EnvironmentManager

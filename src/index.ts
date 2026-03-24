@@ -179,7 +179,11 @@ function setupApiRoutes<T>(router: Router, storage: IStorageProvider, userId: st
             const request = await storage.createRequest(req.body as CreateRequestInput);
             res.status(201).json({ request });
         };
-        void create();
+        void create().catch(err => {
+            // eslint-disable-next-line no-console
+            console.error('[restiqo] Error creating request:', err);
+            res.status(500).json({ error: 'Failed to create request' });
+        });
     });
 
     router.get('/__api__/requests/:id', (req: Request, res: Response) => {
@@ -187,7 +191,11 @@ function setupApiRoutes<T>(router: Router, storage: IStorageProvider, userId: st
             const request = await storage.getRequest(req.params.id);
             res.json({ request });
         };
-        void get();
+        void get().catch(err => {
+            // eslint-disable-next-line no-console
+            console.error('[restiqo] Error getting request:', err);
+            res.status(500).json({ error: 'Failed to get request' });
+        });
     });
 
     router.put('/__api__/requests/:id', (req: Request, res: Response) => {
@@ -195,7 +203,11 @@ function setupApiRoutes<T>(router: Router, storage: IStorageProvider, userId: st
             await storage.updateRequest(req.params.id, req.body as UpdateRequestInput);
             res.status(200).json({ success: true });
         };
-        void update();
+        void update().catch(err => {
+            // eslint-disable-next-line no-console
+            console.error('[restiqo] Error updating request:', err);
+            res.status(500).json({ error: 'Failed to update request' });
+        });
     });
 
     router.delete('/__api__/requests/:id', (req: Request, res: Response) => {
@@ -203,7 +215,11 @@ function setupApiRoutes<T>(router: Router, storage: IStorageProvider, userId: st
             await storage.deleteRequest(req.params.id);
             res.status(204).end();
         };
-        void remove();
+        void remove().catch(err => {
+            // eslint-disable-next-line no-console
+            console.error('[restiqo] Error deleting request:', err);
+            res.status(500).json({ error: 'Failed to delete request' });
+        });
     });
 
     setupExecutionRoute(router, storage, userId);

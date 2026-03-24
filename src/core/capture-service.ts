@@ -1,5 +1,6 @@
 
 import { expressScanner } from '../scanner/express-scanner';
+import { JsonStorageProvider } from '../storage/json-provider';
 
 import type { IStorageProvider } from '../storage/types';
 import type { Express } from 'express';
@@ -40,6 +41,7 @@ export class CaptureService {
                 }
 
                 await this.storage.createRequest({
+                    id: (this.storage as JsonStorageProvider).generateId(`${route.method}:${cleanPath}`),
                     collectionId: autoCollection.id,
                     name: route.name,
                     method: route.method,

@@ -194,6 +194,7 @@ export const useDashboardLogic = () => {
     const executing = activeTab?.executing ?? false
     const preRequestScript = activeTab?.preRequestScript ?? ''
     const postRequestScript = activeTab?.postRequestScript ?? ''
+    const queryParams = activeTab?.queryParams ?? [{ key: '', value: '', enabled: true }]
 
     // Setters that update the active tab
     const setMethod = (value: string): void => updateActiveTab({ method: value })
@@ -206,16 +207,81 @@ export const useDashboardLogic = () => {
     const setExecuting = (value: boolean): void => updateActiveTab({ executing: value })
     const setPreRequestScript = (value: string): void => updateActiveTab({ preRequestScript: value })
     const setPostRequestScript = (value: string): void => updateActiveTab({ postRequestScript: value })
+    const setQueryParams = (value: Array<{ key: string; value: string; enabled: boolean }>): void => updateActiveTab({ queryParams: value })
 
-    // Computed Variables for autocomplete
+    // Sync URL <-> QueryParams
+    const isSyncing = useRef(false)
+
+    // 1. Sync URL -> Params
+    useEffect(() => {
+        if (isSyncing.current) return
+        
+        const urlParts = url.split('?')
+        if (urlParts.length < 2) {
+            // No query string in URL. 
+            // Only clear if table currently has non-empty enabled params
+            const currentEnabled = queryParams.filter(p => p.enabled && p.key)
+            if (currentEnabled.length > 0) {
+                isSyncing.current = true
+                setQueryParams([{ key: '', value: '', enabled: true }])
+                setTimeout(() => { isSyncing.current = false }, 10)
+            }
+            return 
+        }
+
+        const queryString = urlParts[1]
+        const pairs = queryString.split('&').filter(p => p).map(p => {
+            const [key, ...valParts] = p.split('=')
+            return {
+                key: decodeURIComponent(key || ''),
+                value: decodeURIComponent(valParts.join('=') || ''),
+                enabled: true
+            }
+        })
+
+        const currentEnabled = queryParams.filter(p => p.enabled && p.key)
+        const isDifferent = pairs.length !== currentEnabled.length || 
+            pairs.some((p, i) => p.key !== currentEnabled[i]?.key || p.value !== currentEnabled[i]?.value)
+
+        if (isDifferent) {
+            isSyncing.current = true
+            setQueryParams([...pairs, { key: '', value: '', enabled: true }])
+            setTimeout(() => { isSyncing.current = false }, 10)
+        }
+    }, [url])
+
+    // 2. Sync Params -> URL
+    useEffect(() => {
+        if (isSyncing.current) return
+
+        const baseUrl = url.split('?')[0]
+        const enabledParams = queryParams.filter(p => p.enabled && p.key)
+        
+        const varSafeEncode = (str: string): string => {
+            return encodeURIComponent(str).replace(/%7B%7B/g, '{{').replace(/%7D%7D/g, '}}')
+        }
+
+        const queryString = enabledParams.map(p => 
+            `${varSafeEncode(p.key)}=${varSafeEncode(p.value)}`
+        ).join('&')
+
+        const newUrl = queryString ? `${baseUrl}?${queryString}` : baseUrl
+        
+        if (newUrl !== url) {
+            isSyncing.current = true
+            setUrl(newUrl)
+            setTimeout(() => { isSyncing.current = false }, 10)
+        }
+    }, [queryParams])
+
+    // Computed Variables for autocomplete and highlighting
     const currentVariables = useMemo(() => {
         const env = environments.find(e => e.id === selectedEnvId)
-        if (!env) { return [] }
+        if (!env) { return {} }
         try {
-            const vars = JSON.parse(env.variables) as Record<string, string>
-            return Object.keys(vars)
+            return JSON.parse(env.variables) as Record<string, string>
         } catch {
-            return []
+            return {}
         }
     }, [environments, selectedEnvId])
 
@@ -799,6 +865,8 @@ export const useDashboardLogic = () => {
         setMethod,
         url,
         setUrl,
+        queryParams,
+        setQueryParams,
         headers,
         setHeaders,
         body,

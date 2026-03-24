@@ -76,6 +76,7 @@ export interface RequestTab {
     method: string
     url: string
     headers: Array<{ key: string; value: string }>
+    queryParams: Array<{ key: string; value: string; enabled: boolean }>
     body: string
     bodyType: 'json' | 'form-data'
     formData: Array<{ key: string; value: string; type: 'text' | 'file'; file: File | null }>

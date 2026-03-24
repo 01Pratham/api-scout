@@ -35,9 +35,12 @@ export class JsonStorageProvider implements IStorageProvider {
     private initPromise: Promise<void> | null = null;
 
     constructor(storagePath?: string, customizationPath?: string, private autoCollectionName: string = 'Auto-Captured') {
-        const defaultPath = path.join(process.cwd(), 'node_modules', 'restiqo', 'lib', '.cache', 'api-tester-db.json');
+        const defaultPath = path.resolve(process.cwd(), 'node_modules', 'restiqo', 'lib', '.cache', 'api-tester-db.json');
         this.cachePath = storagePath ?? defaultPath;
-        this.customPath = customizationPath;
+        this.customPath = customizationPath ? path.resolve(process.cwd(), customizationPath) : undefined;
+        
+        // eslint-disable-next-line no-console
+        if (this.customPath) console.log(`[restiqo] Custom storage: ${this.customPath}`);
     }
 
     public setAutoCollectionName(name: string): void {
@@ -100,7 +103,13 @@ export class JsonStorageProvider implements IStorageProvider {
         if (this.customPath === undefined || this.customPath === null || this.customPath === '') {
             return;
         }
-        await fs.writeFile(this.customPath, JSON.stringify(this.customData, null, 2));
+        try {
+            await fs.mkdir(path.dirname(this.customPath), { recursive: true });
+            await fs.writeFile(this.customPath, JSON.stringify(this.customData, null, 2));
+        } catch (error) {
+            // eslint-disable-next-line no-console
+            console.error(`[restiqo] Failed to save custom data to ${this.customPath}:`, error);
+        }
     }
 
     public async clearCache(): Promise<void> {
@@ -158,7 +167,17 @@ export class JsonStorageProvider implements IStorageProvider {
         return Array.from(map.values());
     }
 
-    private generateId(): string {
+    public generateId(seed?: string): string {
+        if (seed !== undefined && seed !== null && seed !== '') {
+            // Simple hash for stable IDs
+            let hash = 0;
+            for (let i = 0; i < seed.length; i++) {
+                const char = seed.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash; // Convert to 32bit integer
+            }
+            return 'stable-' + Math.abs(hash).toString(36);
+        }
         return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
     }
 
@@ -243,10 +262,10 @@ export class JsonStorageProvider implements IStorageProvider {
         return all.find((r: StoreRequest) => r.id === id && !r.is_deleted);
     }
 
-    public async createRequest(data: CreateRequestInput): Promise<StoreRequest> {
+    public async createRequest(data: CreateRequestInput & { id?: string }): Promise<StoreRequest> {
         await this.waitInitialized();
         const newRequest: StoreRequest = {
-            id: this.generateId(),
+            id: data.id ?? this.generateId(),
             ...data,
             is_deleted: false,
             createdAt: new Date().toISOString(),
@@ -268,15 +287,31 @@ export class JsonStorageProvider implements IStorageProvider {
     }
 
     public async updateRequest(id: string, data: UpdateRequestInput): Promise<void> {
-        await this.waitInitialized();
+        await this.ensureFreshData();
         this.ensureCustomData();
+        
         const existing = this.customData.requests.find((r: StoreRequest) => r.id === id);
         if (existing !== undefined) {
             Object.assign(existing, { ...data, updatedAt: new Date().toISOString() });
         } else {
             const cacheItem = this.cacheData.requests.find((r: StoreRequest) => r.id === id);
             if (cacheItem !== undefined) {
+                // When moving a request to customData, we must also ensure its collection exists in customData
+                const colId = cacheItem.collectionId;
+                const existingCol = this.customData.collections.find(c => c.id === colId);
+                if (existingCol === undefined) {
+                    const cacheCol = this.cacheData.collections.find(c => c.id === colId);
+                    if (cacheCol !== undefined) {
+                        this.customData.collections.push({ ...cacheCol });
+                    }
+                }
+                
                 this.customData.requests.push({ ...cacheItem, ...data, updatedAt: new Date().toISOString() });
+                // eslint-disable-next-line no-console
+                console.log(`[restiqo] Moved request ${id} from cache to custom storage.`);
+            } else {
+                // eslint-disable-next-line no-console
+                console.warn(`[restiqo] Update failed: Request ${id} not found in cache or custom storage.`);
             }
         }
         await this.saveCustom();
