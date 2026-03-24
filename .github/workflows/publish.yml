@@ -10,10 +10,12 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      packages: write
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # needed for tags
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -21,23 +23,30 @@ jobs:
           node-version: '20'
           registry-url: 'https://registry.npmjs.org'
 
-      - name: Install library dependencies
-        run: npm ci
-
-      - name: Install UI dependencies
-        run: npm ci --prefix ui-src
+      - name: Install dependencies
+        run: |
+          npm ci
+          npm ci --prefix ui-src
 
       - name: Configure Git
         run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Bump version
+      # ✅ bump version WITHOUT committing
+      - name: Bump version (no commit)
         run: |
-          npm version patch -m "chore(release): %s [skip ci]"
+          npm version patch --no-git-tag-version
 
-      - name: Push changes
-        run: git push --follow-tags
+      # ✅ create tag manually
+      - name: Create tag
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          git tag v$VERSION
+
+      # ✅ push ONLY tags (no branch push)
+      - name: Push tag
+        run: git push origin --tags
 
       - name: Build and Publish
         run: npm publish --access public
