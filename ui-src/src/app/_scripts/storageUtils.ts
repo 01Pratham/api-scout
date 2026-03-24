@@ -9,6 +9,7 @@ export const createNewTab = (): RequestTab => ({
     method: 'GET',
     url: '',
     headers: [{ key: '', value: '' }],
+    queryParams: [{ key: '', value: '', enabled: true }],
     body: '',
     bodyType: 'json',
     formData: [{ key: '', value: '', type: 'text', file: null }],
@@ -38,6 +39,7 @@ export const loadTabsFromStorage = (): {
                         tab.formData?.map(f => ({ ...f, file: null })) ?? [
                             { key: '', value: '', type: 'text' as const, file: null },
                         ],
+                    queryParams: tab.queryParams ?? [{ key: '', value: '', enabled: true }],
                     executing: false,
                 }))
                 return {

@@ -23,7 +23,7 @@ interface CodeEditorProps {
     language?: string
     height?: string
     readOnly?: boolean
-    variables?: string[]
+    variables?: Record<string, string>
 }
 
 /**
@@ -35,7 +35,7 @@ export const CodeEditor = ({
     language = 'json',
     height = '300px',
     readOnly = false,
-    variables = []
+    variables = {}
 }: CodeEditorProps): JSX.Element => {
     const { colorMode } = useColorMode()
     const editorRef = useRef<MonacoEditorInstance | null>(null)
@@ -64,6 +64,10 @@ export const CodeEditor = ({
         let match
 
         while ((match = regex.exec(content)) !== null) {
+            const varName = match[1];
+            const hasValue = variables[varName] !== undefined && variables[varName] !== null && variables[varName] !== '';
+            const className = hasValue ? 'variable-found' : 'variable-missing';
+
             // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
             const startPos = model.getPositionAt(match.index) as any
             // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
@@ -82,8 +86,12 @@ export const CodeEditor = ({
                     endPos.column as number
                 ),
                 options: {
-                    inlineClassName: 'variable-highlight',
-                    hoverMessage: { value: `Variable: ${match[1]}` }
+                    inlineClassName: className,
+                    hoverMessage: { 
+                        value: hasValue 
+                            ? `Variable: ${varName}\nValue: ${variables[varName]}` 
+                            : `Variable: ${varName} (Not defined or empty)` 
+                    }
                 }
             })
         }
@@ -203,7 +211,7 @@ export const CodeEditor = ({
                 }) as string
 
                 if (textUntilPosition.endsWith('{{')) {
-                    const suggestions = variables.map(v => ({
+                    const suggestions = Object.keys(variables).map(v => ({
                         label: v,
                         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                         kind: monacoInstance.languages.CompletionItemKind.Variable,
@@ -232,16 +240,22 @@ export const CodeEditor = ({
     return (
         <Box
             height={height}
+            minHeight="100px"
             border="1px solid"
             borderColor={colorMode === 'dark' ? "whiteAlpha.200" : "gray.200"}
             borderRadius="md"
             overflow="hidden"
+            position="relative"
             sx={{
-                '.variable-highlight': {
-                    backgroundColor: 'rgba(159, 122, 234, 0.2)',
-                    color: 'purple.300',
-                    borderRadius: '2px',
-                    borderBottom: '1px dashed'
+                '.variable-found': {
+                    color: '#3182ce', // Blue.500
+                    fontWeight: 'bold',
+                    textDecoration: 'underline dotted'
+                },
+                '.variable-missing': {
+                    color: '#e53e3e', // Red.500
+                    fontWeight: 'bold',
+                    textDecoration: 'underline dashed'
                 }
             }}
         >
