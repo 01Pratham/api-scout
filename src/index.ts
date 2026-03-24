@@ -31,13 +31,6 @@ interface InternalApp {
     use(...args: Array<string | RequestHandler | Router>): void;
 }
 
-interface InternalRouter {
-    use(...args: Array<string | RequestHandler | Router | typeof json | typeof expressStatic>): void;
-    get(path: string, ...handlers: RequestHandler[]): void;
-    post(path: string, ...handlers: RequestHandler[]): void;
-    put(path: string, ...handlers: RequestHandler[]): void;
-    delete(path: string, ...handlers: RequestHandler[]): void;
-}
 
 export interface ApiTesterOptions<T> {
     app: T;
@@ -180,7 +173,7 @@ function setupApiRoutes<T>(router: Router, storage: IStorageProvider, userId: st
             res.status(201).json({ request });
         };
         void create().catch(err => {
-            // eslint-disable-next-line no-console
+             
             console.error('[restiqo] Error creating request:', err);
             res.status(500).json({ error: 'Failed to create request' });
         });
@@ -192,7 +185,7 @@ function setupApiRoutes<T>(router: Router, storage: IStorageProvider, userId: st
             res.json({ request });
         };
         void get().catch(err => {
-            // eslint-disable-next-line no-console
+             
             console.error('[restiqo] Error getting request:', err);
             res.status(500).json({ error: 'Failed to get request' });
         });
@@ -204,7 +197,7 @@ function setupApiRoutes<T>(router: Router, storage: IStorageProvider, userId: st
             res.status(200).json({ success: true });
         };
         void update().catch(err => {
-            // eslint-disable-next-line no-console
+             
             console.error('[restiqo] Error updating request:', err);
             res.status(500).json({ error: 'Failed to update request' });
         });
@@ -216,7 +209,7 @@ function setupApiRoutes<T>(router: Router, storage: IStorageProvider, userId: st
             res.status(204).end();
         };
         void remove().catch(err => {
-            // eslint-disable-next-line no-console
+             
             console.error('[restiqo] Error deleting request:', err);
             res.status(500).json({ error: 'Failed to delete request' });
         });

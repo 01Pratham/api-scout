@@ -1,7 +1,7 @@
 
 import { expressScanner } from '../scanner/express-scanner';
-import { JsonStorageProvider } from '../storage/json-provider';
 
+import type { JsonStorageProvider } from '../storage/json-provider';
 import type { IStorageProvider } from '../storage/types';
 import type { Express } from 'express';
 

@@ -37,10 +37,10 @@ export class JsonStorageProvider implements IStorageProvider {
     constructor(storagePath?: string, customizationPath?: string, private autoCollectionName: string = 'Auto-Captured') {
         const defaultPath = path.resolve(process.cwd(), 'node_modules', 'restiqo', 'lib', '.cache', 'api-tester-db.json');
         this.cachePath = storagePath ?? defaultPath;
-        this.customPath = customizationPath ? path.resolve(process.cwd(), customizationPath) : undefined;
-        
+        this.customPath = path.resolve(process.cwd(), customizationPath ?? "./api-tester.json");
+
         // eslint-disable-next-line no-console
-        if (this.customPath) console.log(`[restiqo] Custom storage: ${this.customPath}`);
+        if (this.customPath !== undefined && this.customPath !== null && this.customPath !== '') { console.log(`[restiqo] Custom storage: ${this.customPath}`); }
     }
 
     public setAutoCollectionName(name: string): void {
@@ -107,7 +107,7 @@ export class JsonStorageProvider implements IStorageProvider {
             await fs.mkdir(path.dirname(this.customPath), { recursive: true });
             await fs.writeFile(this.customPath, JSON.stringify(this.customData, null, 2));
         } catch (error) {
-            // eslint-disable-next-line no-console
+
             console.error(`[restiqo] Failed to save custom data to ${this.customPath}:`, error);
         }
     }
@@ -289,7 +289,7 @@ export class JsonStorageProvider implements IStorageProvider {
     public async updateRequest(id: string, data: UpdateRequestInput): Promise<void> {
         await this.ensureFreshData();
         this.ensureCustomData();
-        
+
         const existing = this.customData.requests.find((r: StoreRequest) => r.id === id);
         if (existing !== undefined) {
             Object.assign(existing, { ...data, updatedAt: new Date().toISOString() });
@@ -305,12 +305,12 @@ export class JsonStorageProvider implements IStorageProvider {
                         this.customData.collections.push({ ...cacheCol });
                     }
                 }
-                
+
                 this.customData.requests.push({ ...cacheItem, ...data, updatedAt: new Date().toISOString() });
                 // eslint-disable-next-line no-console
                 console.log(`[restiqo] Moved request ${id} from cache to custom storage.`);
             } else {
-                // eslint-disable-next-line no-console
+
                 console.warn(`[restiqo] Update failed: Request ${id} not found in cache or custom storage.`);
             }
         }
