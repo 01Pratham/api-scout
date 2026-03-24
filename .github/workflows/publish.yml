@@ -15,7 +15,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # needed for tags
+          fetch-depth: 0  # important for tags
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -38,17 +38,32 @@ jobs:
         run: |
           npm version patch --no-git-tag-version
 
-      # ✅ create tag manually
-      - name: Create tag
+      # ✅ get version
+      - name: Get version
+        id: version
         run: |
-          VERSION=$(node -p "require('./package.json').version")
-          git tag v$VERSION
+          echo "VERSION=$(node -p "require('./package.json').version")" >> $GITHUB_ENV
 
-      # ✅ push ONLY tags (no branch push)
-      - name: Push tag
-        run: git push origin --tags
+      # ✅ check if tag already exists remotely
+      - name: Create and push tag (safe)
+        run: |
+          if git ls-remote --tags origin | grep "refs/tags/v${VERSION}" >/dev/null; then
+            echo "Tag v${VERSION} already exists. Skipping tag push."
+          else
+            git tag v${VERSION}
+            git push origin v${VERSION}
+          fi
 
-      - name: Build and Publish
-        run: npm publish --access public
+      # ✅ publish only if not already published
+      - name: Publish to npm (safe)
+        run: |
+          PUBLISHED=$(npm view your-package-name version || echo "0.0.0")
+
+          if [ "$PUBLISHED" = "$VERSION" ]; then
+            echo "Version already published. Skipping npm publish."
+            exit 0
+          fi
+
+          npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
